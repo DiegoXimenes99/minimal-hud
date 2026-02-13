@@ -19,7 +19,35 @@ return {
 			return GetVehicleFuelLevel(currentVehicle)
 		end
 	end,
-	getNosLevel = function(currentVehicle) -- Replace this with your own logic to grab the nos level of the vehicle.
+	getNosLevel = function(currentVehicle) -- Integration with mri_qnitro
+		if GetResourceState('mri_Qnitro') == 'started' then
+			-- Try different export methods for mri_qnitro
+			local success, nitroLevel = pcall(function()
+				return exports['mri_Qnitro']:GetNitroLevel(currentVehicle)
+			end)
+
+			if success and nitroLevel then
+				return math.floor(nitroLevel * 100) -- Convert to percentage (0-100)
+			end
+
+			-- Alternative method - try getting from vehicle state
+			success, nitroLevel = pcall(function()
+				return Entity(currentVehicle).state.nitro or 0
+			end)
+
+			if success and nitroLevel then
+				return math.floor(nitroLevel)
+			end
+
+			-- Another alternative - try direct export call
+			success, nitroLevel = pcall(function()
+				return exports['mri_Qnitro']:getNitroLevel(currentVehicle)
+			end)
+
+			if success and nitroLevel then
+				return math.floor(nitroLevel * 100)
+			end
+		end
 		return 0
 	end,
 }

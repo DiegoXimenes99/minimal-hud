@@ -1,6 +1,6 @@
 return {
-    framework = "none", -- Framework for player stats: "none", "esx", "qb", "ox", "custom".
-    speedUnit = "mph", -- Speed unit: "mph" or "kph".
+    framework = "qb", -- Framework for player stats: "none", "esx", "qb", "ox", "custom".
+    speedUnit = "kph", -- Speed unit: "mph" or "kph".
 
     useBuiltInSeatbeltLogic = true, -- Enable custom seatbelt logic (true/false).
     ejectMinSpeed = 20.0, -- Using built-in seatbelt logic: Minimum speed to eject when not wearing a seatbelt (in speedUnit).

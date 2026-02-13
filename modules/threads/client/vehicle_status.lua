@@ -1,7 +1,8 @@
-local interface = lib.require("modules.interface.client")
-local utility = lib.require("modules.utility.shared.main")
-local functions = lib.require("config.functions")
-local config = lib.require("config.shared")
+local interface = require("modules.interface.client")
+local utility = require("modules.utility.shared.main")
+local logger = require("modules.utility.shared.logger")
+local functions = require("config.functions")
+local config = require("config.shared")
 
 local VehicleStatusThread = {}
 VehicleStatusThread.__index = VehicleStatusThread
@@ -51,7 +52,7 @@ function VehicleStatusThread:start()
             local engineState = GetIsVehicleEngineRunning(vehicle)
             local fuel = math.floor(fuelValue)
             local highGear = GetVehicleHighGear(vehicle)
-            local currentGear = GetVehicleDashboardCurrentGear()
+            local currentGear = GetVehicleCurrentGear(vehicle)
             local newGears = highGear
             local retval, lightsOn, highbeamsOn = GetVehicleLightsState(vehicle)
 
@@ -60,21 +61,28 @@ function VehicleStatusThread:start()
                 newGears = 0
             end
 
-            -- Display vehicle gear
+            -- Display vehicle gear - Versão corrigida
             local gearString = "N"
+            
             if not engineState then
                 gearString = ""
-            elseif currentGear == 0 and GetEntitySpeed(vehicle) > 0 then
-                gearString = "R"
-            elseif currentGear == 1 and GetEntitySpeed(vehicle) < 0.1 and engineState then
-                gearString = "N"
-            elseif currentGear == 1 then
-                gearString = "1"
-            elseif currentGear > 1 then
-                gearString = tostring(math.floor(currentGear))
+            else
+                if currentGear == 0 then
+                    -- Marcha 0 pode ser neutro ou ré
+                    local speedVector = GetEntitySpeedVector(vehicle, true)
+                    if speedVector.y < -0.5 then -- Movendo para trás
+                        gearString = "R"
+                    else
+                        gearString = "N"
+                    end
+                elseif currentGear > 0 then
+                    -- Marchas positivas
+                    gearString = tostring(currentGear)
+                end
             end
-            -- Fix for vehicles that only have 1 gear
-            if highGear == 1 then
+            
+            -- Fix for vehicles that only have 1 gear (motos, etc.)
+            if highGear <= 1 then
                 gearString = ""
             end
 
@@ -86,7 +94,7 @@ function VehicleStatusThread:start()
             elseif normalizedSpeedUnit == "mph" then
                 speed = math.floor(GetEntitySpeed(vehicle) * 2.236936) -- Convert m/s to MPH
             else
-                lib.print.error("Invalid speed unit in config. Expected 'kph' or 'mph', but got:", config.speedUnit)
+                logger.error("Invalid speed unit in config. Expected 'kph' or 'mph', but got:", config.speedUnit)
             end
 
             local rpm
@@ -116,12 +124,12 @@ function VehicleStatusThread:start()
         end
 
         if self.seatbelt then
-            lib.print.verbose("(vehicleStatusThread) seatbelt found, toggling to false")
+            logger.verbose("(vehicleStatusThread) seatbelt found, toggling to false")
             self.seatbelt:toggle(false)
         end
 
         playerStatusThread:setIsVehicleThreadRunning(false)
-        lib.print.verbose("(vehicleStatusThread) Vehicle status thread ended.")
+        logger.verbose("(vehicleStatusThread) Vehicle status thread ended.")
     end)
 end
 

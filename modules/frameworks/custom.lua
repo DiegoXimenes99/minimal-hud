@@ -1,3 +1,5 @@
+local logger = require("modules.utility.shared.logger")
+
 local customFramework = {}
 customFramework.__index = customFramework
 
@@ -33,13 +35,13 @@ end
 
 -- Change this EventHandler to toggle the HUD on player load
 AddEventHandler('customFramework:client:Connect', function()
-    lib.print.debug("[customFramework] Player loaded. Toggling HUD on.")
+    logger.info("[customFramework] Player loaded. Toggling HUD on.")
     interface:toggle(true)
 end)
 
 -- Change this EventHandler to toggle the HUD on player logout
 AddEventHandler('customFramework:client:Disconnect', function()
-    lib.print.debug("[customFramework] Player logged out. Toggling HUD off.")
+    logger.info("[customFramework] Player logged out. Toggling HUD off.")
     interface:toggle(false)
 end)
 

@@ -1,8 +1,9 @@
 ---@diagnostic disable: cast-local-type
-local interface = lib.require("modules.interface.client")
-local config = lib.require("config.shared")
-local utility = lib.require("modules.utility.shared.main")
-local sharedFunctions = lib.require("config.functions")
+local logger = require("modules.utility.shared.logger")
+local interface = require("modules.interface.client")
+local config = require("config.shared")
+local utility = require("modules.utility.shared.main")
+local sharedFunctions = require("config.functions")
 
 local PlayerStatusThread = {}
 PlayerStatusThread.__index = PlayerStatusThread
@@ -30,7 +31,7 @@ end
 
 ---@param value boolean
 function PlayerStatusThread:setIsVehicleThreadRunning(value)
-    lib.print.verbose("(PlayerStatusThread:setIsVehicleThreadRunning) Setting: ", value)
+    logger.verbose("(PlayerStatusThread:setIsVehicleThreadRunning) Setting: ", value)
     self.isVehicleThreadRunning = value
 end
 
@@ -89,13 +90,18 @@ function PlayerStatusThread:start(vehicleStatusThread, seatbeltLogic, framework)
 			local pedStamina = math.floor(100 - GetPlayerSprintStaminaRemaining(PlayerId())) or nil
 
             local isInVehicle = IsPedInAnyVehicle(ped, false)
-            local isSeatbeltOn = config.useBuiltInSeatbeltLogic and seatbeltLogic.seatbeltState or sharedFunctions.isSeatbeltOn()
+            local isSeatbeltOn = config.useBuiltInSeatbeltLogic and seatbeltLogic and seatbeltLogic.seatbeltState or sharedFunctions.isSeatbeltOn()
+            
+            -- Debug seatbelt state
+            if isInVehicle then
+                logger.verbose("(PlayerStatus) In vehicle - useBuiltInSeatbeltLogic:", config.useBuiltInSeatbeltLogic, "seatbeltLogic exists:", seatbeltLogic ~= nil, "seatbeltState:", seatbeltLogic and seatbeltLogic.seatbeltState or "N/A", "final isSeatbeltOn:", isSeatbeltOn)
+            end
 
             if isInVehicle then
                 if not self:getIsVehicleThreadRunning() and vehicleStatusThread then
                     vehicleStatusThread:start()
                     DisplayRadar(true)
-                    lib.print.verbose("(playerStatus) (vehicleStatusThread) Vehicle status thread started.")
+                    logger.verbose("(playerStatus) (vehicleStatusThread) Vehicle status thread started.")
                 else
                     DisplayRadar(true)
                 end
@@ -124,6 +130,11 @@ function PlayerStatusThread:start(vehicleStatusThread, seatbeltLogic, framework)
                 minimap = utility.calculateMinimapSizeAndPosition(),
                 player = player_data,
             })
+            
+            -- Debug: Log seatbelt state being sent to interface
+            if isInVehicle then
+                logger.verbose("(PlayerStatus) Sending to interface - isSeatbeltOn:", player_data.isSeatbeltOn)
+            end
 
             Wait(300)
         end

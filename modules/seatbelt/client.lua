@@ -1,11 +1,12 @@
-local config = lib.require("config.shared")
+local config = require("config.shared")
+local logger = require("modules.utility.shared.logger")
 
 local SeatbeltLogic = {}
 SeatbeltLogic.__index = SeatbeltLogic
 
 function SeatbeltLogic.new()
     if not config.useBuiltInSeatbeltLogic then
-        lib.print.debug("(SeatbeltLogic.new) Config.useBuiltInSeatbeltLogic is disabled.")
+        logger.info("(SeatbeltLogic.new) Config.useBuiltInSeatbeltLogic is disabled.")
         return
     end
 
@@ -20,48 +21,71 @@ function SeatbeltLogic.new()
 
     RegisterCommand("-toggle_seatbelt", function()
         local ped = PlayerPedId()
+        logger.info("(SeatbeltLogic) Command -toggle_seatbelt triggered")
 
         if not IsPedInAnyVehicle(ped, false) or IsPedOnAnyBike(ped) then
-            return lib.print.debug("(SeatbeltLogic:toggle) Seatbelt is not available either due to the fact that the player is not in a vehicle or on a bike.")
+            return logger.info("(SeatbeltLogic:toggle) Seatbelt is not available either due to the fact that the player is not in a vehicle or on a bike.")
         end
 
         self:toggle(not self.seatbeltState)
-        lib.print.debug("(commands:toggleSeatbelt) Toggled seatbelt.")
+        logger.info("(commands:toggleSeatbelt) Toggled seatbelt to: ", self.seatbeltState)
     end, false)
 
     SetPedConfigFlag(PlayerPedId(), 32, true)
     SetFlyThroughWindscreenParams(self.ejectVelocity, self.unknownEjectVelocity, self.unknownModifier, self.minDamage)
     RegisterKeyMapping("-toggle_seatbelt", "Toggle Seatbelt", "keyboard", "B")
+    
+    -- Comando alternativo para teste
+    RegisterCommand("testseatbelt", function()
+        local ped = PlayerPedId()
+        logger.info("(SeatbeltLogic) Test command triggered")
+        
+        if not IsPedInAnyVehicle(ped, false) or IsPedOnAnyBike(ped) then
+            return logger.info("(SeatbeltLogic:test) Not in vehicle or on bike")
+        end
+        
+        self:toggle(not self.seatbeltState)
+        logger.info("(SeatbeltLogic:test) Toggled seatbelt to: ", self.seatbeltState)
+    end, false)
+    
+    -- Adicionar mapeamento para tecla G também
+    RegisterCommand("seatbelt", function()
+        ExecuteCommand("-toggle_seatbelt")
+    end, false)
+    RegisterKeyMapping("seatbelt", "Toggle Seatbelt (G)", "keyboard", "G")
 
     return self
 end
 
 ---@param state boolean
 function SeatbeltLogic:toggle(state)
+    logger.info("(SeatbeltLogic:toggle) Called with state: ", state)
     self.seatbeltState = state
 
     if state then
+        logger.info("(SeatbeltLogic:toggle) Seatbelt ON - Setting windscreen params and disabling exit")
         SetFlyThroughWindscreenParams(10000.0, 10000.0, 17.0, 500.0)
         self:disableVehicleExitControlThread()
         return
     end
 
+    logger.info("(SeatbeltLogic:toggle) Seatbelt OFF - Restoring windscreen params")
     SetFlyThroughWindscreenParams(self.ejectVelocity, self.unknownEjectVelocity, self.unknownModifier, self.minDamage)
 end
 
 function SeatbeltLogic:disableVehicleExitControlThread()
     Citizen.CreateThread(function()
-        lib.print.debug("(SeatbeltLogic:disableVehicleExitControlThread) Thread enabled.")
+        logger.info("(SeatbeltLogic:disableVehicleExitControlThread) Thread enabled.")
         while self.seatbeltState do
             DisableControlAction(0, 75, true) -- 75: INPUT_VEH_EXIT
             Wait(0)
         end
-        lib.print.debug("(SeatbeltLogic:disableVehicleExitControlThread) Thread disabled.")
+        logger.info("(SeatbeltLogic:disableVehicleExitControlThread) Thread disabled.")
     end)
 end
 
 function SeatbeltLogic:isSeatbeltOn()
-    lib.print.debug("(SeatbeltLogic:isSeatbeltOn) Returning: ", self.seatbeltState)
+    logger.info("(SeatbeltLogic:isSeatbeltOn) Returning: ", self.seatbeltState)
 
     return self.seatbeltState
 end

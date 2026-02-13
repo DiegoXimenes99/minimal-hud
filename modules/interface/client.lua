@@ -1,5 +1,7 @@
+local logger = require("modules.utility.shared.logger")
+
 if not _G.interface then
-    lib.print.debug("(modules/interface) _G.interface not found, creating first global instance")
+    logger.info("(modules/interface) _G.interface not found, creating first global instance")
 
     local interface = {
         store = {
@@ -44,7 +46,7 @@ if not _G.interface then
             newState = state
         end
 
-        lib.print.debug("(interface:toggle) newState: ", newState)
+        logger.info("(interface:toggle) newState: ", newState)
 
         self:message("state::visibility::app::set", newState)
     end
@@ -57,7 +59,7 @@ if not _G.interface then
 
         self:on("APP_LOADED", function(_, cb)
             self.store.status.app.loaded = true
-            local config = lib.require("config.shared")
+            local config = require("config.shared")
             cb(config)
             self:toggle(false) -- Hide HUD by default
         end)
@@ -70,7 +72,7 @@ if not _G.interface then
         assert(event, "[Interface] [On] `event` parameter is nil.")
         assert(callback, "[Interface] [On] `callback` parameter is nil.")
 
-        lib.print.debug("[Interface] [On] Registering: ", event)
+        logger.info("[Interface] [On] Registering: ", event)
 
         if self.store.callbacks[event] then
             goto continue
@@ -79,17 +81,17 @@ if not _G.interface then
         self.store.callbacks[event] = {}
 
         RegisterNuiCallback(event, function(data, cb)
-            lib.print.debug("[Interface] [On] Received callback for event: ", event, " data: ", data)
+            logger.debug("[Interface] [On] Received callback for event: ", event, " data: ", data)
 
             for i = 1, #self.store.callbacks[event] do
                 if not self.store.callbacks[event][i] then
-                    return lib.print.verbose("[Interface] [Callback] Event:", event, "Handler with index:", i, " is nil.")
+                    return logger.verbose("[Interface] [Callback] Event:", event, "Handler with index:", i, " is nil.")
                 end
 
                 local success, result = pcall(self.store.callbacks[event][i], data, cb)
 
                 if not success then
-                    lib.print.error("[Interface] [On] Callback failed with error:", result, "handler:", self.store.callbacks[event][i])
+                    logger.error("[Interface] [On] Callback failed with error:", result, "handler:", self.store.callbacks[event][i])
                 end
             end
         end)
